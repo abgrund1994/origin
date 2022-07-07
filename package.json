@@ -1,0 +1,8 @@
+{
+  "name": "origin",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:abgrund1994/origin.git",
+  "author": "Nhan Bui <durian.cb@gmail.com>",
+  "license": "MIT"
+}
