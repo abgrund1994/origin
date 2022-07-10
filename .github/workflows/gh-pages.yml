@@ -26,7 +26,9 @@ jobs:
           GITHUB_REPO_NAME: ${{ github.event.repository.name }}
       - name: Build app
         run: yarn build
+        if: ${{ github.event.repository.name !== 'origin' }}
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
+        if: ${{ github.event.repository.name !== 'origin' }}
         with:
           folder: public
