@@ -4,25 +4,13 @@ import classnames from "classnames";
 import * as styles from "./Image.module.css";
 
 export default function Image(props) {
-  const { className, src, shouldLoad = true, onImageLoad, id } = props;
+  const { className, src } = props;
   const imageRef = useRef(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
 
   function onLoad() {
     if (!isLoaded) {
       setIsLoaded(true);
-      if (onImageLoad != null) {
-        onImageLoad();
-      }
-    }
-  }
-
-  function onError() {
-    if (!isLoaded) {
-      if (onImageLoad != null) {
-        onImageLoad();
-      }
     }
   }
 
@@ -38,18 +26,7 @@ export default function Image(props) {
     [styles.imageHidden]: !isLoaded,
   });
 
-  if (!shouldLoad) {
-    return null;
-  }
-
   return (
-    <img
-      id={id}
-      src={src}
-      className={imageClassName}
-      onLoad={onLoad}
-      onError={onError}
-      ref={imageRef}
-    />
+    <img src={src} className={imageClassName} onLoad={onLoad} ref={imageRef} />
   );
 }

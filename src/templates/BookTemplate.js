@@ -8,20 +8,26 @@ import { fetchWithRetries } from "../utils/fetch";
 import Layout from "../components/Layout";
 import Logo from "../components/Logo";
 import IconSettings from "../components/IconSettings";
+import Image from "../components/Image";
 import useLocalStorage from "../hooks/useLocalStorage";
 import useWindowSize from "../hooks/useWindowSize";
 
 import * as styles from "./BookTemplate.module.css";
 
 const READING_MODE_KEY = "reading_mode";
-const READING_MODE_WIDTH = "width";
-const READING_MODE_HEIGHT = "height";
+const READING_MODE_WIDTH = "0";
+const READING_MODE_HEIGHT = "1";
+const READING_MODE_WEBTOON = "2";
+const READING_MODE_COUNT = 3;
 
 export default function BookTemplate(props) {
   const {
-    bookMeta: { dimensions, name },
-    bookPages,
-  } = props.data;
+    data: {
+      bookMeta: { dimensions, name },
+      bookPages,
+    },
+    pageContext: { prevPath, nextPath },
+  } = props;
   const [readingMode, setReadingMode] = useLocalStorage(
     READING_MODE_KEY,
     READING_MODE_WIDTH
@@ -56,11 +62,7 @@ export default function BookTemplate(props) {
   }
 
   function onSettingsButtonClick() {
-    setReadingMode(
-      readingMode === READING_MODE_WIDTH
-        ? READING_MODE_HEIGHT
-        : READING_MODE_WIDTH
-    );
+    setReadingMode(String((parseInt(readingMode) + 1) % READING_MODE_COUNT));
   }
 
   return (
@@ -69,6 +71,7 @@ export default function BookTemplate(props) {
         title={name}
         hidden={navHidden}
         onSettingsButtonClick={onSettingsButtonClick}
+        {...{ prevPath, nextPath }}
       />
       {bookPages.edges.map(({ node: { publicURL } }, index) => {
         const [pageWidth, pageHeight] = dimensions[index];
@@ -88,12 +91,24 @@ export default function BookTemplate(props) {
           />
         );
       })}
+      <div className={styles.footer}>
+        {prevPath != null ? (
+          <Link to={prevPath} className={styles.footerNavButton}>
+            PREV
+          </Link>
+        ) : null}
+        {nextPath != null ? (
+          <Link to={nextPath} className={styles.footerNavButton}>
+            NEXT
+          </Link>
+        ) : null}
+      </div>
     </Layout>
   );
 }
 
 function Header(props) {
-  const { title, hidden, onSettingsButtonClick } = props;
+  const { title, hidden, onSettingsButtonClick, prevPath, nextPath } = props;
   const headerClassName = classnames(styles.header, {
     [styles.headerHidden]: hidden,
   });
@@ -107,6 +122,16 @@ function Header(props) {
         <div>
           <p className={styles.headerTitle}>{title}</p>
         </div>
+        {prevPath != null ? (
+          <Link to={prevPath} className={styles.headerNavButton}>
+            PREV
+          </Link>
+        ) : null}
+        {nextPath != null ? (
+          <Link to={nextPath} className={styles.headerNavButton}>
+            NEXT
+          </Link>
+        ) : null}
       </div>
       <div className={styles.headerRightSection}>
         <button className={styles.headerButton} onClick={onSettingsButtonClick}>
@@ -161,10 +186,13 @@ function Page(props) {
 
   const windowRatio = windowHeight / windowWidth;
   const pageRatio = pageHeight / pageWidth;
+
   const shouldSpanWidth = readingMode !== READING_MODE_HEIGHT;
+
   const pageClassName = classnames(styles.page, {
     [styles.pageSpanWidth]: shouldSpanWidth,
     [styles.pageSpanHeight]: !shouldSpanWidth,
+    [styles.pageWebtoon]: readingMode === READING_MODE_WEBTOON,
   });
 
   return (
@@ -193,12 +221,8 @@ function Page(props) {
             }}
           />
         ) : null}
-        {inView ? (
-          <img
-            id={`page-image-${index}`}
-            className={styles.pageImage}
-            src={blobUrl}
-          />
+        {inView && blobUrl != null ? (
+          <Image className={styles.pageImage} src={blobUrl} />
         ) : null}
       </div>
     </div>

@@ -1,13 +1,11 @@
 {
-  "name": "origin",
+  "name": "create-react-app",
   "version": "1.0.0",
-  "main": "index.js",
-  "repository": "git@github.com:abgrund1994/origin.git",
-  "author": "Abgrund Malenia <durian.cb@gmail.com>",
-  "license": "MIT",
   "scripts": {
     "build-encrypt-script": "pkg scripts/encrypt.js -c pkg-encrypt.json -o encrypt",
     "build-image-script": "pkg scripts/image.js -c pkg-image.json -o image",
+    "encrypt-script": "node ./scripts/encrypt.js",
+    "image-script": "node ./scripts/image.js",
     "inject-config": "node ./scripts/inject-config.js",
     "postinstall": "sh setup.sh",
     "develop": "gatsby develop",

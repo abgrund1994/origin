@@ -39,6 +39,17 @@
   display: flex;
 }
 
+.headerNavButton {
+  font-size: 16px;
+  font-weight: 600;
+  color: black;
+  background-color: #f368e0;
+  border-radius: 8px;
+  display: inline-block;
+  padding: 4px 8px;
+  margin-left: 16px;
+}
+
 .headerBackIcon {
   height: 56px;
   margin-right: 48px;
@@ -93,6 +104,7 @@
   fill: white;
 }
 
+/* Page */
 .page {
   margin-bottom: 32px;
 }
@@ -101,6 +113,10 @@
   .page {
     margin-bottom: 16px;
   }
+}
+
+.pageWebtoon {
+  margin-bottom: 0;
 }
 
 .pageSpanWidth {
@@ -128,4 +144,24 @@
   top: 0;
   left: 0;
   width: 100%;
+}
+
+/* Footer */
+.footer {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 48px 48px;
+}
+
+.footerNavButton {
+  font-size: 24px;
+  font-weight: 600;
+  color: #f368e0;
+  background-color: transparent;
+  border: 2px solid #f368e0;
+  border-radius: 8px;
+  display: inline-block;
+  padding: 4px 8px;
 }

@@ -22,13 +22,23 @@ exports.createPages = async ({ graphql, actions }) => {
   if (result.errors) {
     throw result.errors;
   }
-
-  result.data.bookJsons.edges.forEach((bookJson, index) => {
+  const {
+    data: { bookJsons },
+  } = result;
+  bookJsons.edges.forEach((bookJson, index) => {
     createPage({
       path: `/${slugify(bookJson.node.name.toLowerCase())}`,
       component: bookTemplate,
       context: {
         name: bookJson.node.name,
+        prevPath:
+          index > 0
+            ? `/${slugify(bookJsons.edges[index - 1].node.name.toLowerCase())}`
+            : null,
+        nextPath:
+          index < bookJsons.edges.length - 1
+            ? `/${slugify(bookJsons.edges[index + 1].node.name.toLowerCase())}`
+            : null,
       },
     });
   });
