@@ -1,8 +1,8 @@
 module.exports = {
-  pathPrefix: "/",
+  pathPrefix: "/{{ id }}",
   siteMetadata: {
-    title: "",
-    siteUrl: "",
+    title: "{{ id }}",
+    siteUrl: "https://abgrund1994.github.io",
   },
   plugins: [
     "gatsby-plugin-postcss",

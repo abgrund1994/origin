@@ -8,13 +8,13 @@
   "scripts": {
     "build-encrypt-script": "pkg scripts/encrypt.js -c pkg-encrypt.json -o encrypt",
     "build-image-script": "pkg scripts/image.js -c pkg-image.json -o image",
+    "inject-config": "node ./scripts/inject-config.js",
     "postinstall": "sh setup.sh",
     "develop": "gatsby develop",
     "start": "gatsby develop",
-    "build": "gatsby build",
+    "build": "gatsby build --prefix-paths",
     "serve": "gatsby serve",
-    "clean": "gatsby clean",
-    "deploy": "gatsby build --prefix-paths && gh-pages -d public"
+    "clean": "gatsby clean"
   },
   "dependencies": {
     "classnames": "^2.3.1",
@@ -35,6 +35,7 @@
     "gatsby-plugin-react-helmet": "^5.9.0",
     "gatsby-source-filesystem": "^4.9.1",
     "gatsby-transformer-json": "^4.9.0",
+    "lodash": "^4.17.21",
     "pkg": "^5.7.0"
   }
 }
