@@ -1,10 +1,17 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, {
+  useMemo,
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+} from "react";
 import { graphql, Link } from "gatsby";
 import { useInView } from "react-intersection-observer";
 import classnames from "classnames";
 
 import { decryptBuffer, createBlobUrl } from "../utils/crypto";
 import { fetchWithRetries } from "../utils/fetch";
+import { decrypt } from "../utils/string";
 import Layout from "../components/Layout";
 import Logo from "../components/Logo";
 import IconSettings from "../components/IconSettings";
@@ -28,6 +35,7 @@ export default function BookTemplate(props) {
     },
     pageContext: { prevPath, nextPath },
   } = props;
+  const decryptedName = useMemo(() => decrypt(name), [name]);
   const [readingMode, setReadingMode] = useLocalStorage(
     READING_MODE_KEY,
     READING_MODE_WIDTH
@@ -35,29 +43,39 @@ export default function BookTemplate(props) {
   const { width: windowWidth, height: windowHeight } = useWindowSize();
   const [navHidden, setNavHidden] = useState(true);
 
+  const goBack = useCallback((pageIndex) => {
+    const currentPageEl = document.getElementById(`page-${pageIndex}`);
+    const currentPageTop = currentPageEl.getBoundingClientRect().top;
+    if (currentPageTop < -5) {
+      currentPageEl.scrollIntoView();
+    } else if (pageIndex > 0) {
+      const prevPageEl = document.getElementById(`page-${pageIndex - 1}`);
+      prevPageEl.scrollIntoView();
+    }
+  }, []);
+
+  const goForward = useCallback((pageIndex) => {
+    const currentPageEl = document.getElementById(`page-${pageIndex}`);
+    const currentPageTop = currentPageEl.getBoundingClientRect().top;
+    if (currentPageTop > 5) {
+      currentPageEl.scrollIntoView();
+    } else if (pageIndex < bookPages.edges.length - 1) {
+      const nextPageEl = document.getElementById(`page-${pageIndex + 1}`);
+      nextPageEl.scrollIntoView();
+    }
+  }, []);
+
+  useEffect(() => {}, [goBack, goForward]);
+
   function onPageClick(e, pageIndex) {
     const windowWidth = window.innerWidth;
     const clickX = e.clientX;
     if (clickX < windowWidth / 10) {
-      const currentPageEl = document.getElementById(`page-${pageIndex}`);
-      const currentPageTop = currentPageEl.getBoundingClientRect().top;
-      if (currentPageTop < -5) {
-        currentPageEl.scrollIntoView();
-      } else if (pageIndex > 0) {
-        const prevPageEl = document.getElementById(`page-${pageIndex - 1}`);
-        prevPageEl.scrollIntoView();
-      }
+      goBack(pageIndex);
     } else if (clickX < (9 * windowWidth) / 10) {
       setNavHidden((flag) => !flag);
     } else {
-      const currentPageEl = document.getElementById(`page-${pageIndex}`);
-      const currentPageTop = currentPageEl.getBoundingClientRect().top;
-      if (currentPageTop > 5) {
-        currentPageEl.scrollIntoView();
-      } else if (pageIndex < bookPages.edges.length - 1) {
-        const nextPageEl = document.getElementById(`page-${pageIndex + 1}`);
-        nextPageEl.scrollIntoView();
-      }
+      goForward(pageIndex);
     }
   }
 
@@ -68,7 +86,7 @@ export default function BookTemplate(props) {
   return (
     <Layout>
       <Header
-        title={name}
+        title={decryptedName}
         hidden={navHidden}
         onSettingsButtonClick={onSettingsButtonClick}
         {...{ prevPath, nextPath }}
@@ -170,7 +188,7 @@ function Page(props) {
       fetchImage();
       onceRef.current = true;
     }
-  }, [inView]);
+  }, [inView, publicURL]);
 
   useEffect(() => {
     if (inView) {

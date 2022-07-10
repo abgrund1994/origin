@@ -150,7 +150,7 @@ function Thumbnail(props) {
       fetchImage();
       onceRef.current = true;
     }
-  }, [inView]);
+  }, [inView, publicURL]);
 
   useEffect(() => {
     if (inView) {
@@ -172,7 +172,6 @@ function Thumbnail(props) {
   return (
     <div className={thumbnailClassName} ref={ref}>
       <div
-        className={styles.thumbnailPadding}
         style={{
           paddingTop: `${ratio * 100}%`,
         }}

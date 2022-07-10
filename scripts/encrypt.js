@@ -19,7 +19,7 @@ const KEY = Buffer.from(KEY_HEX, "hex");
 const IV = Buffer.from(IV_HEX, "hex");
 
 async function encryptTitle(titleDirPath) {
-  const titleName = path.basename(titleDirPath);
+  let titleName = path.basename(titleDirPath);
   console.log(`Encrypting title '${titleName}'...`);
 
   let filePaths = await searchFiles(`${titleDirPath}/*.{png,jpg,jpeg,webp}`);
@@ -83,8 +83,15 @@ async function encryptTitle(titleDirPath) {
     dimensionsList.push([width, height]);
   }
 
+  // Encrypt title name
+  if (!titleName.startsWith("Rev ")) {
+    console.log(`Encrypting title name for title '${titleName}'...`);
+    titleName = `Rev ${reverse(titleName).trim()}`;
+    await fsPromises.rename(titleDirPath, `content/${titleName}`);
+  }
+
   // Create JSON file containing metadata of title
-  console.log(`Creating metadata JSON for title '${titleName}'...`);
+  console.log(`Creating metadata JSON for encrypted title '${titleName}'...`);
   await fsPromises.writeFile(
     `${titleDirPath}/index.json`,
     JSON.stringify({
@@ -92,15 +99,6 @@ async function encryptTitle(titleDirPath) {
       name: titleName,
     })
   );
-
-  // Encrypt title name
-  if (!titleName.startsWith("Rev ")) {
-    console.log(`Encrypting title name for title '${titleName}'...`);
-    await fsPromises.rename(
-      titleDirPath,
-      `content/Rev ${reverse(titleName).trim()}`
-    );
-  }
 }
 
 (async () => {
