@@ -21,16 +21,17 @@ const WAIFU2X_BIN_PATH = path.join(
   "./scripts/static/waifu2x/waifu2x-ncnn-vulkan.exe"
 );
 const ENLARGED_FILE_PREFIX = "hentie2110";
-const IDEAL_WIDTH = 2048;
+const IDEAL_PAGE_WIDTH = 2048;
 const IDEAL_HEIGHT = 2732;
+const IDEAL_THUMBNAIL_WIDTH = 600;
 
-async function compressFile(filePath) {
+async function compressFile(filePath, maximumWidth) {
   const fileExtension = getFileExtension(filePath);
   const newFilePath = filePath.replace(fileExtension, "webp");
   const { width, height } = sizeOf(filePath);
   const encoder = new CWebp(filePath);
-  if (width > IDEAL_WIDTH) {
-    encoder.resize(IDEAL_WIDTH, 0);
+  if (width > maximumWidth) {
+    encoder.resize(maximumWidth, 0);
   }
   encoder.quality(100);
   await encoder.write(newFilePath);
@@ -43,7 +44,7 @@ async function enlargeFile(filePath, index) {
   const { width, height } = sizeOf(filePath);
   const targetFileName = `${ENLARGED_FILE_PREFIX}_${padNumber(index)}`;
 
-  if (width < IDEAL_WIDTH) {
+  if (width < IDEAL_PAGE_WIDTH) {
     // Need to enlarge the image
     const absoluteTargetFilePath = path.resolve(
       process.cwd(),
@@ -51,7 +52,7 @@ async function enlargeFile(filePath, index) {
       `${targetFileName}.png`
     );
     const absoluteFilePath = path.resolve(process.cwd(), filePath);
-    const scale = width < IDEAL_WIDTH / 2 ? 4 : 2;
+    const scale = width < IDEAL_PAGE_WIDTH / 2 ? 4 : 2;
     console.log(
       `Enlarging image ${fileName} with Waifu2x at scale x${scale}...`
     );
@@ -82,20 +83,43 @@ async function processTitle(titleDirPath) {
   const titleName = path.basename(titleDirPath);
   console.log(`Processing title '${titleName}'...`);
 
-  const filePaths = await searchFiles(`${titleDirPath}/*.{png,jpg,jpeg}`);
-
-  // Folder is either empty or has already been processed previously
-  if (filePaths.length === 0) {
-    console.log(`No images founder under title '${titleName}'!`);
-    return;
-  }
+  let filePaths = await searchFiles(`${titleDirPath}/*.{png,jpg,jpeg}`);
 
   // Sort file paths in natural order
   filePaths.sort(naturalCompare);
 
+  const thumbnailPaths = filePaths.filter((filePath) =>
+    filePath.startsWith(`${titleDirPath}/thumbnail`)
+  );
+  filePaths = filePaths.filter(
+    (filePath) => !filePath.startsWith(`${titleDirPath}/thumbnail`)
+  );
+
+  // Folder is either empty or has already been processed previously
+  if (filePaths.length === 0) {
+    console.log(`No images found under title '${titleName}'!`);
+    return;
+  }
+
+  // Automatically create thumbnail (if needed) by using the first page
+  let autoThumbnailPath;
+  if (thumbnailPaths.length === 0) {
+    console.log(
+      `Duplicating first page for thumbnail under title '${titleName}'...`
+    );
+    const firstFilePath = filePaths[0];
+    const firstFileExtension = getFileExtension(firstFilePath);
+    const autoThumbnailPath = path.join(
+      titleDirPath,
+      `./thumbnail.${firstFileExtension}`
+    );
+    await fsPromises.copyFile(firstFilePath, autoThumbnailPath);
+    thumbnailPaths.push(autoThumbnailPath);
+  }
+
   // Enlarge images with Waifu2x if needed
   console.log(`Enlarging images (if needed) under title '${titleName}'...`);
-  let hasEnlargeError = false;
+  let enlargeError;
   const enlargePoolLimit = pLimit(ENLARGE_WORKERS_COUNT);
   const enlargeTasks = filePaths.map((filePath, index) =>
     enlargePoolLimit(() => enlargeFile(filePath, index + 1))
@@ -103,50 +127,64 @@ async function processTitle(titleDirPath) {
   try {
     await Promise.all(enlargeTasks);
   } catch (err) {
-    hasEnlargeError = true;
+    enlargeError = err;
   }
 
   const enlargedFilePaths = await searchFiles(
     `${titleDirPath}/${ENLARGED_FILE_PREFIX}_*.{png,jpg,jpeg}`
   );
 
-  if (hasEnlargeError) {
-    console.error(`Failed to enlarge all images under title '${titleName}'!`);
-    await deleteFiles(enlargedFilePaths);
+  if (enlargeError != null) {
+    console.error(
+      `Failed to enlarge all images under title '${titleName}'!`,
+      enlargeError
+    );
+    await deleteFiles([
+      ...enlargedFilePaths,
+      ...(autoThumbnailPath != null ? [autoThumbnailPath] : []),
+    ]);
     return;
   }
 
   // Sort enlarged file paths in natural order
   enlargedFilePaths.sort(naturalCompare);
 
-  // Compress enlarged images to WebP format and resize to ideal size
+  // Compress enlarged images & thumbnails to WebP format and resize to ideal size
   console.log(
     `Compressing & resizing enlarged images under title '${titleName}'...`
   );
-  let hasCompressError = false;
+  let compressError;
   const compressPoolLimit = pLimit(COMPRESS_WORKERS_COUNT);
-  const compressTasks = enlargedFilePaths.map((filePath) =>
-    compressPoolLimit(() => compressFile(filePath))
+  const compressPageTasks = enlargedFilePaths.map((filePath) =>
+    compressPoolLimit(() => compressFile(filePath, IDEAL_PAGE_WIDTH))
+  );
+  const compressThumbnailTasks = thumbnailPaths.map((filePath) =>
+    compressPoolLimit(() => compressFile(filePath, IDEAL_THUMBNAIL_WIDTH))
   );
   try {
-    await Promise.all(compressTasks);
+    await Promise.all([...compressPageTasks, ...compressThumbnailTasks]);
   } catch (err) {
-    hasCompressError = true;
+    hasCompressError = err;
   }
 
   const compressedFilePaths = await searchFiles(`${titleDirPath}/*.webp`);
 
-  if (hasCompressError) {
+  if (compressError != null) {
     console.error(
-      `Failed to compress & resize all enlarged images under title '${titleName}'!`
+      `Failed to compress & resize all enlarged images under title '${titleName}'!`,
+      compressError
     );
-    await deleteFiles([...enlargedFilePaths, ...compressedFilePaths]);
+    await deleteFiles([
+      ...enlargedFilePaths,
+      ...compressedFilePaths,
+      ...(autoThumbnailPath != null ? [autoThumbnailPath] : []),
+    ]);
     return;
   }
 
   // Delete original & enlarged images
   console.log(`Cleaning up old images under title '${titleName}'...`);
-  await deleteFiles([...filePaths, ...enlargedFilePaths]);
+  await deleteFiles([...filePaths, ...enlargedFilePaths, ...thumbnailPaths]);
 
   console.log(`Processed title '${titleName}' successfully!`);
 }
