@@ -45,16 +45,21 @@ async function enlargeFile(filePath, index) {
 
   if (width < IDEAL_WIDTH) {
     // Need to enlarge the image
-    const targetFilePath = path.join(fileDirectory, `./${targetFileName}.png`);
+    const absoluteTargetFilePath = path.resolve(
+      process.cwd(),
+      fileDirectory,
+      `${targetFileName}.png`
+    );
+    const absoluteFilePath = path.resolve(process.cwd(), filePath);
     const scale = width < IDEAL_WIDTH / 2 ? 4 : 2;
     console.log(
       `Enlarging image ${fileName} with Waifu2x at scale x${scale}...`
     );
     try {
       await exec(
-        `${WAIFU2X_BIN_PATH} -i '${filePath}' -o '${targetFilePath}' -n 0 -s ${scale} -t 512 -m models-cunet -g 0 -j 2:2:2 -f png`
+        `${WAIFU2X_BIN_PATH} -i "${absoluteFilePath}" -o "${absoluteTargetFilePath}" -n 0 -s ${scale} -t 512 -m models-cunet -g 0 -j 2:2:2 -f png`
       );
-      await fsPromises.access(targetFilePath);
+      await fsPromises.access(absoluteTargetFilePath);
     } catch (err) {
       console.error(
         `Failed to enlarge image ${fileName} with Waifu2x at scale x${scale}!`,
