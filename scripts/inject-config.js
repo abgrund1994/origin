@@ -3,7 +3,7 @@ const template = require("lodash/template");
 
 (async function () {
   console.log(
-    `Injecting Gatsby Config with repo name ${procecss.env.GITHUB_REPO_NAME}...`
+    `Injecting Gatsby Config with repo name ${process.env.GITHUB_REPO_NAME}...`
   );
   const dataTemplate = await fsPromises.readFile("./gatsby-config.js", "utf-8");
   const injectData = template(dataTemplate, { interpolate: /{{([\s\S]+?)}}/g });
