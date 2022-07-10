@@ -1,8 +1,8 @@
 module.exports = {
-  pathPrefix: "/",
+  pathPrefix: "/{{ id }}",
   siteMetadata: {
     title: "{{ id }}",
-    siteUrl: "https://mock.github.io",
+    siteUrl: "https://{{ owner }}.github.io",
   },
   plugins: [
     "gatsby-plugin-postcss",
