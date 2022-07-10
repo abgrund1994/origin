@@ -17,8 +17,8 @@ const { pLimit } = require("./utils/pool");
 const ENLARGE_WORKERS_COUNT = 2;
 const COMPRESS_WORKERS_COUNT = 3;
 const WAIFU2X_BIN_PATH = path.join(
-  __dirname,
-  "./static/waifu2x/waifu2x-ncnn-vulkan.exe"
+  process.cwd(),
+  "./scripts/static/waifu2x/waifu2x-ncnn-vulkan.exe"
 );
 const ENLARGED_FILE_PREFIX = "hentie2110";
 const IDEAL_WIDTH = 2048;
@@ -57,7 +57,8 @@ async function enlargeFile(filePath, index) {
       await fsPromises.access(targetFilePath);
     } catch (err) {
       console.error(
-        `Failed to enlarge image ${fileName} with Waifu2x at scale x${scale}!`
+        `Failed to enlarge image ${fileName} with Waifu2x at scale x${scale}!`,
+        err
       );
       throw err;
     }
